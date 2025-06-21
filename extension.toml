@@ -1,0 +1,7 @@
+id = "probe-rs-debugger"
+name = "probe-rs debugger"
+version = "0.0.1"
+schema_version = 1
+authors = ["Dominik Böhi <dboehi@fastmail.com>"]
+description = "Debugger for embedded systems using probe-rs"
+repository = "https://github.com/tiwalun/probe-rs-zed"
