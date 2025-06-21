@@ -5,3 +5,5 @@ schema_version = 1
 authors = ["Dominik Böhi <dboehi@fastmail.com>"]
 description = "Debugger for embedded systems using probe-rs"
 repository = "https://github.com/tiwalun/probe-rs-zed"
+
+[debug_adapters.probe-rs]

@@ -1,0 +1,19 @@
+{
+  "properties": {
+    "request": {
+      "type": "string",
+      "enum": ["launch"],
+      "description": "The request type for the PHP debug adapter, always \"launch\"",
+      "default": "launch"
+    },
+    "coreConfigs": {
+      "type": "array"
+    },
+    "server": {
+      "type": "string",
+      "description": "Optionally connect to an existing `probe-rs dap-server` session on IP and Port, e.g. '127.0.0.1:50000'",
+      "default": "127.0.0.1:50000"
+    }
+  },
+  "required": ["request", "coreConfigs"]
+}
