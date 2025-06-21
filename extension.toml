@@ -7,3 +7,4 @@ description = "Debugger for embedded systems using probe-rs"
 repository = "https://github.com/tiwalun/probe-rs-zed"
 
 [debug_adapters.probe-rs]
+# Schema is taken from the default location in debug_adapter_schemas/probe-rs.json

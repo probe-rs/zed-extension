@@ -1,19 +1,448 @@
 {
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SessionConfig",
+  "description": "Shared options for all session level configuration.",
+  "type": "object",
   "properties": {
-    "request": {
-      "type": "string",
-      "enum": ["launch"],
-      "description": "The request type for the PHP debug adapter, always \"launch\"",
-      "default": "launch"
+    "allowEraseAll": {
+      "description": "Allow the session to erase all memory of the chip or reset it to factory default.",
+      "type": "boolean",
+      "default": false
+    },
+    "chip": {
+      "description": "The target to be selected.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "chipDescriptionPath": {
+      "description": "Path to a custom target description yaml.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "connectUnderReset": {
+      "description": "Assert target's reset during connect",
+      "type": "boolean",
+      "default": false
+    },
+    "consoleLogLevel": {
+      "description": "Level of information to be logged to the debugger console (Error, Info or Debug)",
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": "Console",
+      "enum": [
+        "Console",
+        "Info",
+        "Debug",
+        null
+      ]
     },
     "coreConfigs": {
-      "type": "array"
+      "description": "Every core on the target has certain configuration.\n\n NOTE: Although we allow specifying multiple core configurations, this is a work in progress, and probe-rs-debugger currently only supports debugging a single core.",
+      "type": "array",
+      "items": {
+        "description": "Configuration options for all core level configuration.",
+        "type": "object",
+        "properties": {
+          "catchHardfault": {
+            "description": "Enable hardfault vector catch if its supported on the target.",
+            "type": "boolean",
+            "default": true
+          },
+          "catchReset": {
+            "description": "Enable reset vector catch if its supported on the target.",
+            "type": "boolean",
+            "default": true
+          },
+          "coreIndex": {
+            "description": "The MCU Core to debug. Default is 0",
+            "type": "integer",
+            "format": "uint",
+            "default": 0,
+            "minimum": 0
+          },
+          "programBinary": {
+            "description": "Binary to debug as a path. Relative to `cwd`, or fully qualified.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rttChannelFormats": {
+            "description": "Configure data_format and show_timestamps for select channels",
+            "type": "array",
+            "default": [],
+            "items": {
+              "description": "The User specified configuration for each active RTT Channel.",
+              "type": "object",
+              "properties": {
+                "channelNumber": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "uint32",
+                  "minimum": 0
+                },
+                "dataFormat": {
+                  "default": "String",
+                  "oneOf": [
+                    {
+                      "description": "string",
+                      "type": "string",
+                      "const": "String"
+                    },
+                    {
+                      "description": "binary",
+                      "type": "string",
+                      "const": "BinaryLE"
+                    },
+                    {
+                      "description": "defmt",
+                      "type": "string",
+                      "const": "Defmt"
+                    }
+                  ]
+                },
+                "logFormat": {
+                  "description": "Controls the output format for DataFormat::Defmt.",
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "default": null
+                },
+                "mode": {
+                  "description": "RTT channel operating mode. Defaults to the target's configuration.",
+                  "anyOf": [
+                    {
+                      "description": "Specifies what to do when a channel doesn't have enough buffer space for a complete write on the\n target side.",
+                      "oneOf": [
+                        {
+                          "description": "Skip writing the data completely if it doesn't fit in its entirety.",
+                          "type": "string",
+                          "const": "NoBlockSkip"
+                        },
+                        {
+                          "description": "Write as much as possible of the data and ignore the rest.",
+                          "type": "string",
+                          "const": "NoBlockTrim"
+                        },
+                        {
+                          "description": "Block (spin) if the buffer is full. Note that if the application writes within a critical\n section, using this mode can cause the application to freeze if the buffer becomes full and\n is not read by the host.",
+                          "type": "string",
+                          "const": "BlockIfFull"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                },
+                "showLocation": {
+                  "description": "Controls the inclusion of source location information for DataFormat::Defmt.",
+                  "type": "boolean",
+                  "default": false
+                },
+                "showTimestamps": {
+                  "description": "Controls the inclusion of timestamps for [`DataFormat::String`] and [`DataFormat::Defmt`].",
+                  "type": "boolean",
+                  "default": true
+                }
+              }
+            }
+          },
+          "rttEnabled": {
+            "type": "boolean",
+            "default": false
+          },
+          "svdFile": {
+            "description": "CMSIS-SVD file for the target. Relative to `cwd`, or fully qualified.",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
     },
-    "server": {
-      "type": "string",
-      "description": "Optionally connect to an existing `probe-rs dap-server` session on IP and Port, e.g. '127.0.0.1:50000'",
-      "default": "127.0.0.1:50000"
+    "cwd": {
+      "description": "Path to the requested working directory for the debugger",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "flashingConfig": {
+      "description": "Flashing configuration",
+      "type": "object",
+      "properties": {
+        "flashingEnabled": {
+          "description": "Flash the target before debugging",
+          "type": "boolean",
+          "default": false
+        },
+        "formatOptions": {
+          "description": "[`FormatOptions`] to control the flashing operation, depending on the type of binary ( [`probe_rs::flashing::Format`] ) to be flashed.",
+          "type": "object",
+          "properties": {
+            "bin_options": {
+              "type": "object",
+              "properties": {
+                "base_address": {
+                  "description": "The address in memory where the binary will be put at. This is only considered when `bin` is selected as the format.",
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "uint64",
+                  "default": null,
+                  "minimum": 0
+                },
+                "skip": {
+                  "description": "The number of bytes to skip at the start of the binary file. This is only considered when `bin` is selected as the format.",
+                  "type": "integer",
+                  "format": "uint32",
+                  "default": 0,
+                  "minimum": 0
+                }
+              },
+              "default": {
+                "base_address": null,
+                "skip": 0
+              }
+            },
+            "binary_format": {
+              "description": "If a format is provided, use it.\n If a target has a preferred format, we use that.\n Finally, if neither of the above cases are true, we default to ELF.",
+              "anyOf": [
+                {
+                  "description": "A finite list of all the available binary formats probe-rs understands.",
+                  "oneOf": [
+                    {
+                      "description": "Marks a file in binary format. This means that the file contains the contents of the flash 1:1.\n [BinOptions] can be used to define the location in flash where the file contents should be put at.\n Additionally using the same config struct, you can skip the first N bytes of the binary file to have them not put into the flash.",
+                      "type": "string",
+                      "const": "Bin"
+                    },
+                    {
+                      "description": "Marks a file in [Intel HEX](https://en.wikipedia.org/wiki/Intel_HEX) format.",
+                      "type": "string",
+                      "const": "Hex"
+                    },
+                    {
+                      "description": "Marks a file in the [ELF](https://en.wikipedia.org/wiki/Executable_and_Linkable_Format) format.",
+                      "type": "string",
+                      "const": "Elf"
+                    },
+                    {
+                      "description": "Marks a file in the [ESP-IDF bootloader](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/system/app_image_format.html#app-image-structures) format.\n Use [IdfOptions] to configure flashing.",
+                      "type": "string",
+                      "const": "Idf"
+                    },
+                    {
+                      "description": "Marks a file in the [UF2](https://github.com/microsoft/uf2) format.",
+                      "type": "string",
+                      "const": "Uf2"
+                    }
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "elf_options": {
+              "type": "object",
+              "properties": {
+                "skip_section": {
+                  "description": "Section name to skip flashing. This option may be specified multiple times, and is only\n considered when `elf` is selected as the format.",
+                  "type": "array",
+                  "default": [],
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "default": {
+                "skip_section": []
+              }
+            },
+            "idf_options": {
+              "type": "object",
+              "properties": {
+                "idf_bootloader": {
+                  "description": "The idf bootloader path",
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "default": null
+                },
+                "idf_partition_table": {
+                  "description": "The idf partition table path",
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "default": null
+                },
+                "idf_target_app_partition": {
+                  "description": "The idf target app partition",
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "default": null
+                }
+              },
+              "default": {
+                "idf_bootloader": null,
+                "idf_partition_table": null,
+                "idf_target_app_partition": null
+              }
+            }
+          },
+          "default": {
+            "bin_options": {
+              "base_address": null,
+              "skip": 0
+            },
+            "binary_format": null,
+            "elf_options": {
+              "skip_section": []
+            },
+            "idf_options": {
+              "idf_bootloader": null,
+              "idf_partition_table": null,
+              "idf_target_app_partition": null
+            }
+          }
+        },
+        "fullChipErase": {
+          "description": "Do a full chip erase, versus page-by-page erase",
+          "type": "boolean",
+          "default": false
+        },
+        "haltAfterReset": {
+          "description": "Halt the target after reset",
+          "type": "boolean",
+          "default": false
+        },
+        "restoreUnwrittenBytes": {
+          "description": "Restore erased bytes that will not be rewritten from ELF",
+          "type": "boolean",
+          "default": false
+        },
+        "verifyAfterFlashing": {
+          "description": "Verify chip contents after flashing",
+          "type": "boolean",
+          "default": false
+        },
+        "verifyBeforeFlashing": {
+          "description": "Verify chip contents before erasing, to prevent unnecessary reprogramming",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "default": {
+        "flashingEnabled": false,
+        "formatOptions": {
+          "bin_options": {
+            "base_address": null,
+            "skip": 0
+          },
+          "binary_format": null,
+          "elf_options": {
+            "skip_section": []
+          },
+          "idf_options": {
+            "idf_bootloader": null,
+            "idf_partition_table": null,
+            "idf_target_app_partition": null
+          }
+        },
+        "fullChipErase": false,
+        "haltAfterReset": false,
+        "restoreUnwrittenBytes": false,
+        "verifyAfterFlashing": false,
+        "verifyBeforeFlashing": false
+      }
+    },
+    "probe": {
+      "description": "The debug probe selector associated with the debug probe to use. Use 'list' command to see available probes",
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "product_id": {
+          "description": "The the USB product id of the debug probe to be used.",
+          "type": "integer",
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0
+        },
+        "serial_number": {
+          "description": "The the serial number of the debug probe to be used.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "vendor_id": {
+          "description": "The the USB vendor id of the debug probe to be used.",
+          "type": "integer",
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0
+        }
+      },
+      "required": [
+        "vendor_id",
+        "product_id"
+      ]
+    },
+    "speed": {
+      "description": "Protocol speed in kHz",
+      "type": [
+        "integer",
+        "null"
+      ],
+      "format": "uint32",
+      "minimum": 0
+    },
+    "wireProtocol": {
+      "description": "Protocol to use for target connection",
+      "anyOf": [
+        {
+          "description": "The protocol that is to be used by the probe when communicating with the target.\n\n For ARM select `Swd` or `Jtag`, for RISC-V select `Jtag`.",
+          "oneOf": [
+            {
+              "description": "Serial Wire Debug is ARMs proprietary standard for communicating with ARM cores.\n You can find specifics in the [`ARM Debug Interface v5.2`](https://developer.arm.com/documentation/ihi0031/f/?lang=en) specification.",
+              "type": "string",
+              "const": "Swd"
+            },
+            {
+              "description": "JTAG is a standard which is supported by many chips independent of architecture.\n See [`Wikipedia`](https://en.wikipedia.org/wiki/JTAG) for more info.",
+              "type": "string",
+              "const": "Jtag"
+            }
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   },
-  "required": ["request", "coreConfigs"]
+  "required": [
+    "coreConfigs"
+  ]
 }
