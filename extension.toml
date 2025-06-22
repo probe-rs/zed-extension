@@ -4,7 +4,7 @@ version = "0.0.1"
 schema_version = 1
 authors = ["Dominik Böhi <dboehi@fastmail.com>"]
 description = "Debugger for embedded systems using probe-rs"
-repository = "https://github.com/tiwalun/probe-rs-zed"
+repository = "https://github.com/probe-rs/zed-extension"
 
 [debug_adapters.probe-rs]
 # Schema is taken from the default location in debug_adapter_schemas/probe-rs.json
