@@ -1,8 +1,9 @@
 use std::{net::Ipv4Addr, time::Duration};
 
 use zed_extension_api::{
-    self as zed, DebugAdapterBinary, DebugTaskDefinition, StartDebuggingRequestArguments,
-    StartDebuggingRequestArgumentsRequest, TcpArguments, Worktree, serde_json,
+    self as zed, DebugAdapterBinary, DebugConfig, DebugRequest, DebugScenario, DebugTaskDefinition,
+    StartDebuggingRequestArguments, StartDebuggingRequestArgumentsRequest, TcpArguments, Worktree,
+    serde_json,
 };
 
 const ADAPTER_NAME: &str = "probe-rs";
@@ -131,6 +132,65 @@ impl zed::Extension for ProbeRsDebugger {
                 "Invalid value for the 'request' field in configuration. Value is {}, but only 'launch' and 'attach' are supported",
                 request_value
             )),
+        }
+    }
+
+    fn dap_config_to_scenario(
+        &mut self,
+        debug_config: DebugConfig,
+    ) -> Result<DebugScenario, String> {
+        verify_adapter_name(&debug_config.adapter)?;
+
+        match debug_config.request {
+            DebugRequest::Launch(launch_request) => {
+                if !launch_request.args.is_empty() {
+                    return Err(
+                        "Passing arguments is not supported by this debug adapter".to_string()
+                    );
+                }
+
+                if !launch_request.envs.is_empty() {
+                    return Err(
+                        "Setting environment variables is not supported by this debug adapter"
+                            .to_string(),
+                    );
+                }
+
+                // We only get a single program, so we can't create a configuration which would
+                // work in a multi-core scenario.
+                //
+                // We also enable flashing to mimic launching a program.
+                let config = serde_json::json!({
+                    "cwd": launch_request.cwd,
+                    "coreConfigs": [
+                        {
+                            "programBinary": launch_request.program
+                        }
+                    ],
+                    "flashingConfig": {
+                        "flashingEnabled": true,
+                        "haltAfterReset": debug_config.stop_on_entry,
+                    },
+                    "request": "launch",
+
+                });
+
+                let scenario = DebugScenario {
+                    label: debug_config.label,
+                    adapter: debug_config.adapter,
+                    // TODO: Could integrate with cargo
+                    build: None,
+                    config: config.to_string(),
+                    tcp_connection: None,
+                };
+
+                Ok(scenario)
+            }
+            DebugRequest::Attach(_attach_request) => {
+                // We can't really support attach in the traditional sense, because we can't attach to a running program on the
+                // host
+                Err("Attaching to a process is not supported by this debug adapter".to_string())
+            }
         }
     }
 }
