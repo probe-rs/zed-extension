@@ -2,7 +2,7 @@
 
 Debugger extension for [Zed](https://zed.dev) which enables the use of [probe-rs](https://probe.rs) as a debugger.
 
-Currently still in development, and not yet published on the Zed Extenion gallery.
+Currently still in development.
 
 ## Debugger configuration
 
